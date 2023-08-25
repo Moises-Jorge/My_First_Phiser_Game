@@ -7,6 +7,8 @@ class Scene01 extends Phaser.Scene {
     preload() {
         this.load.image('sky', 'img/sky.png')
         this.load.spritesheet('player', 'img/player.png', {frameWidth: 32, frameHeight: 32}) // spritesheet pq está a se carregar um ficheiro com várias imagens, onde cada uma delas representa uma posição diferente do personagem.
+        this.load.image('platform', 'img/platform.png') // Carrengando a imagem referente as plataformas
+
     }
 
     // Método para a criação e configuração inicial desses recursos no jogo
@@ -21,7 +23,17 @@ class Scene01 extends Phaser.Scene {
         this.player.canJump = true // Atributo que vai controlar/regular o salto do personagem
         
         this.control = this.input.keyboard.createCursorKeys() // createCursorKeys(): método responsável por criar objecto capaz de controlar os eventos das teclas pressionadas.
-        console.log(this.control)
+        
+        this.platforms = this.physics.add.staticGroup()
+        this.platforms.create(0, 600, 'platform') // Até aqui se criou as plataformas, porém, o personagem ainda não colide nas plataformas. Para resolver isso, fizemo:
+        .setScale(2, 1) // essa função multiplica o valor da imagem pelos valores passados por parámetro. Sendo que o primero é o "X" e o segundo é o "Y"
+        .setOrigin(0, 1) 
+        .refreshBody() // para actualizar as carecterísticas físicas do objecto depois da sua criação.
+        this.platforms.create(200, 200, 'platform') // Criando outras plataformas...
+        this.platforms.create(600, 400, 'platform').setScale(0.75, 1) // reduzindo o tamanho da plataforma
+        .refreshBody()
+
+        this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
     }
 
     // Método de Actualização, onde vai se estabelecer as dinâmicas e regras do jogo.
