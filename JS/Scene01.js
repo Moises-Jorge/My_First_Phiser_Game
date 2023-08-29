@@ -14,7 +14,7 @@ class Scene01 extends Phaser.Scene {
     // Método para a criação e configuração inicial desses recursos no jogo
     create() {
         this.sky = this.add.image(0, 0, 'sky').setOrigin(0, 0)
-        this.sky.displayWidth = 800
+        this.sky.displayWidth = 1000
         this.sky.displayHeight = 600
 
         this.player = this.physics.add.sprite(50, 500, 'player')
@@ -26,14 +26,21 @@ class Scene01 extends Phaser.Scene {
         
         this.platforms = this.physics.add.staticGroup()
         this.platforms.create(0, 600, 'platform') // Até aqui se criou as plataformas, porém, o personagem ainda não colide nas plataformas. Para resolver isso, fizemo:
-        .setScale(2, 1) // essa função multiplica o valor da imagem pelos valores passados por parámetro. Sendo que o primero é o "X" e o segundo é o "Y"
+        .setScale(2.5, 1) // essa função multiplica o valor da imagem pelos valores passados por parámetro. Sendo que o primero é o "X" e o segundo é o "Y"
         .setOrigin(0, 1) 
         .refreshBody() // para actualizar as carecterísticas físicas do objecto depois da sua criação.
         this.platforms.create(200, 200, 'platform') // Criando outras plataformas...
+        this.platforms.create(1100, 200, 'platform')
+        this.platforms.create(1100, 475, 'platform')
         this.platforms.create(600, 400, 'platform').setScale(0.75, 1) // reduzindo o tamanho da plataforma
         .refreshBody()
 
         this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
+
+        this.physics.world.setBounds(0,0,1000,600) // Redimensionando o mundo de jogo
+        this.cameras.main.startFollow(this.player) // configuração para a câmera seguir o personagem ao longo da tela
+        this.cameras.main.setBounds(0,0,1000,600) // Aqui estamos configurando a câmera para respeitar os limites do mundo do jogo, ou seja, só segue o personagem, se este começa a se aproximar do limite da tela (pode ser aplicado a chamada encadeada de funções neste caso, já que estamos nos ferindo ao mesmo objecto)
+
     }
 
     // Método de Actualização, onde vai se estabelecer as dinâmicas e regras do jogo.
@@ -46,12 +53,12 @@ class Scene01 extends Phaser.Scene {
         else    this.player.setVelocityX(0)
 
         // Movimentando o jogador no eixo "Y"
-        if (this.control.up.isDown && this.player.canJump) { // Se a tecla de movimentação "cima" for pressionada...
+        if (this.control.up.isDown && this.player.canJump && this.player.body.touching.down) { // Se a tecla de movimentação "cima" for pressionada...
             this.player.setVelocityY(-500) // ... o jogador move-se para cima (eixo "Y"), mas ele será sempre puxado para baixo, porque estamos trabalhando com a gravidade
             this.player.canJump = false // se o personagem já tiver saltado, então já não pode mais saltar. Desse modo, vamos precisar recuperar o valor "true" no objecto "canJump" para que o personagem possa saltar novamente; senão, o personagem nunca mais volta a saltar
         }
         // Recuperando o valor "true" no objecto "canJump"
-        if (!this.control.up.isDown && !this.player.canJump) // Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
+        if (!this.control.up.isDown && !this.player.canJump && this.player.body.touching.down) // Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
             this.player.canJump = true // atribuímos de novo o valor "true" no objecto "canJump"
     }
 }
