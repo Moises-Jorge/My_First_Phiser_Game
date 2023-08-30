@@ -47,7 +47,24 @@ class Scene01 extends Phaser.Scene {
         this.platforms.create(600, 400, 'platform').setScale(0.75, 1) // reduzindo o tamanho da plataforma
         .refreshBody()
 
+        // CRIANDO PLATAFORMAS DINÂMICA (que se movem na tela)
+        this.mPlatforms = this.physics.add.group({
+            allowGravity: false, // Anulando a ação da gravidade (o objecto já não vai cair)
+            immovable: true // Para não se mover quando colidirem com o personagem
+        }) // criando o grupo de plataformas dinâmicas
+
+        let mPlatform = this.mPlatforms.create(150, 475, 'platform').setScale(0.25, 1) // criando uma plataforma dinâmica e atribuindo à uma variável
+            mPlatform.speed = 2 // velociadade em que a plataforma vai se mover no eixo x
+            mPlatform.minX = 150 // Posição mínima/inicial da plataforma
+            mPlatform.maxX = 300 // Posição máxima/final em que a plataforma vai se mover
+
+            mPlatform = this.mPlatforms.create(500, 280, 'platform').setScale(0.25, 1) // criando outra plataforma dinâmica
+            mPlatform.speed = 1 // velociadade em que a plataforma vai se mover no eixo x
+            mPlatform.minX = 500 // Posição mínima/inicial da plataforma
+            mPlatform.maxX = 800 // Posição máxima/final em que a plataforma vai se mover
+
         this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
+        this.physics.add.collider(this.player, this.mPlatforms, this.platformMovingThings) // os dois elementos são passados automaticamente neste caso
 
         this.physics.world.setBounds(0,0,1000,600) // Redimensionando o mundo de jogo
         this.cameras.main.startFollow(this.player) // configuração para a câmera seguir o personagem ao longo da tela
@@ -88,6 +105,24 @@ class Scene01 extends Phaser.Scene {
                 this.player.body.velocity.y < 0 ? 1 : 3 // se a velocidade do personagem no eixo y for menor que zero(pulando), recebe animação "1"
             )
         }
+
+        // Aplicando o método "movePlatform" para todos os objectos do grupo dinâminco de plataformas
+        this.mPlatforms.children.iterate((plat) => {
+            this.movePlatform(plat)
+        })
+    }
+
+    // MÉTODO PARA MOVIMENTAR AS PLATAFORMAS DINÂMICAS (auxiliar)
+    movePlatform(plat) { // plat: representa a plataforma que é passada por parâmetro
+        if (plat.x < plat.minX || plat.x > plat.maxX) {
+            plat.speed *= -1 // speed = speed * (-1). Para mudar a direção do objecto (negativo move para esquerda no eixo X)
+        }
+        plat.x += plat.speed // Depois de mudar a direção, agora é necessário mover-se, então vamos modificar a posição da plataforma em função da sua velocidade. Agora só basta chamar a função.
+    }
+
+    // MÉTODO RESPONSÁVEL POR MOVIMENTAR A PLATAFORMA COM OS OBJECTOS QUE ESTIVEREM SOBRE ELE
+    platformMovingThings(sprite, plat) { // O método recebe o objecto e a plataforma
+        sprite.x += plat.speed
     }
 }
 
