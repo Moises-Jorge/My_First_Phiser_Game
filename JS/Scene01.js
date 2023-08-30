@@ -20,7 +20,19 @@ class Scene01 extends Phaser.Scene {
         this.player = this.physics.add.sprite(50, 500, 'player')
         .setCollideWorldBounds(true)
         .setScale(2, 2) // Alterando o tamanho do persogem. Por ser um método que pode ser encadeado, então pode se usar deste jeito. É a mesma coisa que fazer: "this.player = algo.func1().func2().funcN"
+        .setBounce(0.4) // De acordo com o valor passado, o personagem dá um salto quando cai de um salto/plataforma (para não ser uma queda estática)
         this.player.canJump = true // Atributo que vai controlar/regular o salto do personagem
+
+        // CRIANDO A ANIMAÇÃO
+        this.anims.create({
+            key: 'walk',
+            frames: this.anims.generateFrameNumbers('player', {
+                start: 0,
+                end: 3
+            }), // Dividindo colocando índices à cada posição do spriteSheet do personagem
+            frameRate: 8, // Definindo a velocidade da animação
+            repeat: -1 // Informando o número de vezes que a animação vai se repetir. O -1 implica que vai se repetir infinitamente
+        }) // ATÉ AQUI TERMINAMOS DE CRIAR A NOSSA ANIMAÇÃO. PODEMOS CRIAR OUTRAS ANIMAÇÕES SE FOR NECESSÁRIO. AGORA, DEVEMOS CHAMAR ESSA ANIMAÇÃO PARA QUE ELA SEJA APLICADA ENQUANTO O PERSONAGEM SE MOVE
         
         this.control = this.input.keyboard.createCursorKeys() // createCursorKeys(): método responsável por criar objecto capaz de controlar os eventos das teclas pressionadas.
         
@@ -46,11 +58,20 @@ class Scene01 extends Phaser.Scene {
     // Método de Actualização, onde vai se estabelecer as dinâmicas e regras do jogo.
     update() {
         // Movimentando o jogador no eixo "X"
-        if (this.control.left.isDown) // Se a tecla de movimentação "esquerda" for pressionada...
+        if (this.control.left.isDown) { // Se a tecla de movimentação "esquerda" for pressionada...
+            this.player.anims.play('walk', true) // Chamando a animação e definindo o parâmetro "true" para que a animação seja executada ao mesmo tempo com a movimentação
+            this.player.flipX = true // flipX = true: o personagem vira para a esquerda quando estiver se movimentando para a esquerda
             this.player.setVelocityX(-150) //... o jogador move-se para a esquerda no eixo "X"
-        else if (this.control.right.isDown)
+        }
+        else if (this.control.right.isDown) {
+            this.player.anims.play('walk', true)
+            this.player.flipX = false // flipX = false: o personagem vira para a direita quando estiver se movimentando para a direita
             this.player.setVelocityX(150)
-        else    this.player.setVelocityX(0)
+        }
+        else {
+            this.player.setVelocityX(0)
+            this.player.setFrame(0) // Fica sem animação (parado), se nenhum botão for pressionado
+        }
 
         // Movimentando o jogador no eixo "Y"
         if (this.control.up.isDown && this.player.canJump && this.player.body.touching.down) { // Se a tecla de movimentação "cima" for pressionada...
@@ -58,8 +79,15 @@ class Scene01 extends Phaser.Scene {
             this.player.canJump = false // se o personagem já tiver saltado, então já não pode mais saltar. Desse modo, vamos precisar recuperar o valor "true" no objecto "canJump" para que o personagem possa saltar novamente; senão, o personagem nunca mais volta a saltar
         }
         // Recuperando o valor "true" no objecto "canJump"
-        if (!this.control.up.isDown && !this.player.canJump && this.player.body.touching.down) // Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
+        if (!this.control.up.isDown && !this.player.canJump && this.player.body.touching.down) {// Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
             this.player.canJump = true // atribuímos de novo o valor "true" no objecto "canJump"
+        }
+
+        if (!this.player.body.touching.down) { // Animação aplicada quando o personagem não estiver colidindo com nada por baixo (pulando/caindo)
+            this.player.setFrame(
+                this.player.body.velocity.y < 0 ? 1 : 3 // se a velocidade do personagem no eixo y for menor que zero(pulando), recebe animação "1"
+            )
+        }
     }
 }
 
