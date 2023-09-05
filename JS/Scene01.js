@@ -8,6 +8,7 @@ class Scene01 extends Phaser.Scene {
         this.load.image('sky', 'img/sky.png')
         this.load.spritesheet('player', 'img/player.png', {frameWidth: 32, frameHeight: 32}) // spritesheet pq está a se carregar um ficheiro com várias imagens, onde cada uma delas representa uma posição diferente do personagem.
         this.load.image('platform', 'img/platform.png') // Carrengando a imagem referente as plataformas
+        this.load.spritesheet('coin', 'img/coin.png', {frameWidth: 32, frameHeight: 32}) // Carregando as moedas
 
     }
 
@@ -62,9 +63,40 @@ class Scene01 extends Phaser.Scene {
             mPlatform.speed = 1 // velociadade em que a plataforma vai se mover no eixo x
             mPlatform.minX = 500 // Posição mínima/inicial da plataforma
             mPlatform.maxX = 800 // Posição máxima/final em que a plataforma vai se mover
+        
+        // CRIANDO O GRUPO DE MOEDAS: e vamos criar também as moedas exatamente neste momento da criação do grupo
+        this.coins = this.physics.add.group({
+            key: 'coin', // Nome da imagem que estamos usando para criar as moedas
+            repeat: 14, // O número de moedas que vai ser criado
+            setXY: { // Objecto que se refere ao posicinamento das moedas
+                x: 12, // Onde vai ser coloacada a primeira moeda
+                y: -50, // O ponto em que moedas vão começar a cair (por esta razão algumas delas vão ficar por cima da plataformas)
+                stepX: 70 // Valor referente ao distanciamento das moedas
+            }
+        })
+
+        // Criando a animação das moedas(porque elas ficam girando na tela)
+        this.anims.create({
+            key: 'spin', // Nome da animação (é spin pq as moedas ficam girando na tela)
+            frames: this.anims.generateFrameNumbers('coin', { // É aqui onde se divide o sprite por índices
+                start: 0, // O índice atribuído à primeira imagem do spritesheet
+                end: 4 // Índice atribuído à última imagem do spritesheet
+            }),
+            frameRate: 8, // Velocidade da animação
+            repeat: -1 // O número de vezes que a animação vai se repetir (-1 significa que nunca vai parar de se repetir)
+        })
+
+        // Aplicando Bounce e Animação Spin a cada elemento que faz parte do grupo de moedas
+        this.coins.children.iterate((c) => {
+            c.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8)) // Aplicando o efeito Bounce
+            c.anims.play('spin') // Aplicando a animação
+        })
+
 
         this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
+        this.physics.add.collider(this.coins, this.platforms) // Para as moedas colidirem com as plataformas
         this.physics.add.collider(this.player, this.mPlatforms, this.platformMovingThings) // os dois elementos são passados automaticamente neste caso
+        this.physics.add.collider(this.coins, this.mPlatforms, this.platformMovingThings) // Para as moedas coliderem com as plataformas móveis e se manterem lá de acordo com o movimento das plataformas
 
         this.physics.world.setBounds(0,0,1000,600) // Redimensionando o mundo de jogo
         this.cameras.main.startFollow(this.player) // configuração para a câmera seguir o personagem ao longo da tela
