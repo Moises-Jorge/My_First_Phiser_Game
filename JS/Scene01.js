@@ -92,11 +92,17 @@ class Scene01 extends Phaser.Scene {
             c.anims.play('spin') // Aplicando a animação
         })
 
+        // Criando o placar para contabilizar as moedas recolhidas
+        this.score = 0 // contador das moedas recolhidas
+        this.txtScore = this.add.text(15, 15, `SCORE: ${this.score}`, {fontSize: '32px'}).setShadow(0, 0, '#000', 3).setScrollFactor(0)
+        this.setScore() // Método que vai actualizar o placar sempre que uma moeda for apanhada
+
 
         this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
         this.physics.add.collider(this.coins, this.platforms) // Para as moedas colidirem com as plataformas
         this.physics.add.collider(this.player, this.mPlatforms, this.platformMovingThings) // os dois elementos são passados automaticamente neste caso
         this.physics.add.collider(this.coins, this.mPlatforms, this.platformMovingThings) // Para as moedas coliderem com as plataformas móveis e se manterem lá de acordo com o movimento das plataformas
+        this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this) // Sobreposição quando o personagem entrar em contacto com as moedas. O "this" refere-se ao contexto da função que foi chamada
 
         this.physics.world.setBounds(0,0,1000,600) // Redimensionando o mundo de jogo
         this.cameras.main.startFollow(this.player) // configuração para a câmera seguir o personagem ao longo da tela
@@ -155,6 +161,18 @@ class Scene01 extends Phaser.Scene {
     // MÉTODO RESPONSÁVEL POR MOVIMENTAR A PLATAFORMA COM OS OBJECTOS QUE ESTIVEREM SOBRE ELE
     platformMovingThings(sprite, plat) { // O método recebe o objecto e a plataforma
         sprite.x += plat.speed
+    }
+
+    // MÉTODO RESPONSÁVEL PELA COLHEITA DAS MOEDAS
+    collectCoin(player, coin) {
+        coin.destroy()
+        this.score++
+        this.setScore()
+    }
+
+    // MÉTODO RESPONSÁVEL POR ACTUALIZAR O PLACAR
+    setScore() {
+        this.txtScore.setText(this.score > 9 ? `SCORE: ${this.score}` : `SCORE: 0${this.score}`)
     }
 }
 
