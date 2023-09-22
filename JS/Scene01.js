@@ -9,6 +9,7 @@ class Scene01 extends Phaser.Scene {
         this.load.spritesheet('player', 'img/player.png', {frameWidth: 32, frameHeight: 32}) // spritesheet pq está a se carregar um ficheiro com várias imagens, onde cada uma delas representa uma posição diferente do personagem.
         this.load.image('platform', 'img/platform.png') // Carrengando a imagem referente as plataformas
         this.load.spritesheet('coin', 'img/coin.png', {frameWidth: 32, frameHeight: 32}) // Carregando as moedas
+        this.load.image('enemy', 'img/enemy.png') // Carrengo o objecto que vai servir de inimigo/ameça para o personagem
 
     }
 
@@ -23,6 +24,7 @@ class Scene01 extends Phaser.Scene {
         .setScale(2, 2) // Alterando o tamanho do persogem. Por ser um método que pode ser encadeado, então pode se usar deste jeito. É a mesma coisa que fazer: "this.player = algo.func1().func2().funcN"
         .setBounce(0.4) // De acordo com o valor passado, o personagem dá um salto quando cai de um salto/plataforma (para não ser uma queda estática)
         this.player.canJump = true // Atributo que vai controlar/regular o salto do personagem
+        this.player.body.setSize(16, 32)// Redimensionando a área ocupada pelo personagem
 
         // CRIANDO A ANIMAÇÃO
         this.anims.create({
@@ -44,7 +46,7 @@ class Scene01 extends Phaser.Scene {
         .refreshBody() // para actualizar as carecterísticas físicas do objecto depois da sua criação.
         this.platforms.create(200, 200, 'platform') // Criando outras plataformas...
         this.platforms.create(1100, 200, 'platform')
-        this.platforms.create(1100, 475, 'platform')
+        this.platforms.create(1090, 475, 'platform')
         this.platforms.create(600, 400, 'platform').setScale(0.75, 1) // reduzindo o tamanho da plataforma
         .refreshBody()
 
@@ -97,57 +99,67 @@ class Scene01 extends Phaser.Scene {
         this.txtScore = this.add.text(15, 15, `SCORE: ${this.score}`, {fontSize: '32px'}).setShadow(0, 0, '#000', 3).setScrollFactor(0)
         this.setScore() // Método que vai actualizar o placar sempre que uma moeda for apanhada
 
+        // Criando o grupo para a configuração de inimigos/ameaças
+        this.enemies = this.physics.add.group()
+        let enemy = this.enemies.create(Phaser.Math.Between(50, 950), 0, 'enemy').setBounce(1).setCollideWorldBounds(true).setVelocity(Math.random() < 0.5 ? -200 : 200)
+
 
         this.physics.add.collider(this.player, this.platforms) // Quer dizer que toda a plataforma já vai colidir com o personagem
         this.physics.add.collider(this.coins, this.platforms) // Para as moedas colidirem com as plataformas
+        this.physics.add.collider(this.enemies, this.platforms) // Para as ameaças colidirem com as plataformas
         this.physics.add.collider(this.player, this.mPlatforms, this.platformMovingThings) // os dois elementos são passados automaticamente neste caso
         this.physics.add.collider(this.coins, this.mPlatforms, this.platformMovingThings) // Para as moedas coliderem com as plataformas móveis e se manterem lá de acordo com o movimento das plataformas
+        this.physics.add.collider(this.enemies, this.mPlatforms) // Para as ameaças colidirem com as plataformas móveis
+        this.physics.add.collider(this.player, this.enemies, this.enemyHit, null, this) // Colisão entre o personagem com o inimigo
         this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this) // Sobreposição quando o personagem entrar em contacto com as moedas. O "this" refere-se ao contexto da função que foi chamada
 
         this.physics.world.setBounds(0,0,1000,600) // Redimensionando o mundo de jogo
         this.cameras.main.startFollow(this.player) // configuração para a câmera seguir o personagem ao longo da tela
         this.cameras.main.setBounds(0,0,1000,600) // Aqui estamos configurando a câmera para respeitar os limites do mundo do jogo, ou seja, só segue o personagem, se este começa a se aproximar do limite da tela (pode ser aplicado a chamada encadeada de funções neste caso, já que estamos nos ferindo ao mesmo objecto)
 
+        this.gameOver = false // Variável que controla o fim do jogo
     }
 
     // Método de Actualização, onde vai se estabelecer as dinâmicas e regras do jogo.
     update() {
-        // Movimentando o jogador no eixo "X"
-        if (this.control.left.isDown) { // Se a tecla de movimentação "esquerda" for pressionada...
-            this.player.anims.play('walk', true) // Chamando a animação e definindo o parâmetro "true" para que a animação seja executada ao mesmo tempo com a movimentação
-            this.player.flipX = true // flipX = true: o personagem vira para a esquerda quando estiver se movimentando para a esquerda
-            this.player.setVelocityX(-150) //... o jogador move-se para a esquerda no eixo "X"
-        }
-        else if (this.control.right.isDown) {
-            this.player.anims.play('walk', true)
-            this.player.flipX = false // flipX = false: o personagem vira para a direita quando estiver se movimentando para a direita
-            this.player.setVelocityX(150)
-        }
-        else {
-            this.player.setVelocityX(0)
-            this.player.setFrame(0) // Fica sem animação (parado), se nenhum botão for pressionado
-        }
+        if (!this.gameOver) {
+            // Movimentando o jogador no eixo "X"
+            if (this.control.left.isDown) { // Se a tecla de movimentação "esquerda" for pressionada...
+                this.player.anims.play('walk', true) // Chamando a animação e definindo o parâmetro "true" para que a animação seja executada ao mesmo tempo com a movimentação
+                this.player.flipX = true // flipX = true: o personagem vira para a esquerda quando estiver se movimentando para a esquerda
+                this.player.setVelocityX(-150) //... o jogador move-se para a esquerda no eixo "X"
+            }
+            else if (this.control.right.isDown) {
+                this.player.anims.play('walk', true)
+                this.player.flipX = false // flipX = false: o personagem vira para a direita quando estiver se movimentando para a direita
+                this.player.setVelocityX(150)
+            }
+            else {
+                this.player.setVelocityX(0)
+                this.player.setFrame(0) // Fica sem animação (parado), se nenhum botão for pressionado
+            }
 
-        // Movimentando o jogador no eixo "Y"
-        if (this.control.up.isDown && this.player.canJump && this.player.body.touching.down) { // Se a tecla de movimentação "cima" for pressionada...
-            this.player.setVelocityY(-500) // ... o jogador move-se para cima (eixo "Y"), mas ele será sempre puxado para baixo, porque estamos trabalhando com a gravidade
-            this.player.canJump = false // se o personagem já tiver saltado, então já não pode mais saltar. Desse modo, vamos precisar recuperar o valor "true" no objecto "canJump" para que o personagem possa saltar novamente; senão, o personagem nunca mais volta a saltar
-        }
-        // Recuperando o valor "true" no objecto "canJump"
-        if (!this.control.up.isDown && !this.player.canJump && this.player.body.touching.down) {// Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
-            this.player.canJump = true // atribuímos de novo o valor "true" no objecto "canJump"
-        }
+            // Movimentando o jogador no eixo "Y"
+            if (this.control.up.isDown && this.player.canJump && this.player.body.touching.down) { // Se a tecla de movimentação "cima" for pressionada...
+                this.player.setVelocityY(-500) // ... o jogador move-se para cima (eixo "Y"), mas ele será sempre puxado para baixo, porque estamos trabalhando com a gravidade
+                this.player.canJump = false // se o personagem já tiver saltado, então já não pode mais saltar. Desse modo, vamos precisar recuperar o valor "true" no objecto "canJump" para que o personagem possa saltar novamente; senão, o personagem nunca mais volta a saltar
+            }
+            // Recuperando o valor "true" no objecto "canJump"
+            if (!this.control.up.isDown && !this.player.canJump && this.player.body.touching.down) {// Se a tecla "cima" NÃO(!) tiver sido pressionada e o jogador não poder pular (objecto "canJump" tiver o valor "false")...
+                this.player.canJump = true // atribuímos de novo o valor "true" no objecto "canJump"
+            }
 
-        if (!this.player.body.touching.down) { // Animação aplicada quando o personagem não estiver colidindo com nada por baixo (pulando/caindo)
-            this.player.setFrame(
-                this.player.body.velocity.y < 0 ? 1 : 3 // se a velocidade do personagem no eixo y for menor que zero(pulando), recebe animação "1"
-            )
-        }
+            if (!this.player.body.touching.down) { // Animação aplicada quando o personagem não estiver colidindo com nada por baixo (pulando/caindo)
+                this.player.setFrame(
+                    this.player.body.velocity.y < 0 ? 1 : 3 // se a velocidade do personagem no eixo y for menor que zero(pulando), recebe animação "1"
+                )
+            }
 
-        // Aplicando o método "movePlatform" para todos os objectos do grupo dinâminco de plataformas
-        this.mPlatforms.children.iterate((plat) => {
-            this.movePlatform(plat)
-        })
+            // Aplicando o método "movePlatform" para todos os objectos do grupo dinâminco de plataformas
+            this.mPlatforms.children.iterate((plat) => {
+                this.movePlatform(plat)
+            })
+        }
     }
 
     // MÉTODO PARA MOVIMENTAR AS PLATAFORMAS DINÂMICAS (auxiliar)
@@ -173,6 +185,14 @@ class Scene01 extends Phaser.Scene {
     // MÉTODO RESPONSÁVEL POR ACTUALIZAR O PLACAR
     setScore() {
         this.txtScore.setText(this.score > 9 ? `SCORE: ${this.score}` : `SCORE: 0${this.score}`)
+    }
+
+    // MÉTODO RESPONSÁVEL POR MATAR O PERSONAGEM (ACTIVAR O GAME OVER)
+    enemyHit(player, enemy) {
+        this.physics.pause()
+        player.anims.stop()
+        player.setTint(0xff0000)
+        this.gameOver = true
     }
 }
 
